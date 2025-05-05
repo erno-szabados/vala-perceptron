@@ -5,7 +5,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Initialize Automake
-AM_INIT_AUTOMAKE([foreign -Wall -Werror subdir-objects])
+AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 
 # Set up silent rules (optional, makes build output cleaner)
 AM_SILENT_RULES([yes])

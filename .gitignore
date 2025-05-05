@@ -22,9 +22,14 @@
 /*.lo
 /*.la
 /.libs/
+/src/*.o
 /src/*.c
 /src/*.h
 /src/verceptron
+/src/.deps/
+/src/Makefile
+/src/Makefile.in
+/src/verceptron_vala.stamp
 
 # Other
 *~
@@ -33,3 +38,8 @@
 /config.status
 /Makefile
 /stamp-h1
+
+# Additional files to ignore
+/=
+/compile
+/config.h
