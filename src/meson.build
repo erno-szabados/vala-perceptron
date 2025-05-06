@@ -12,7 +12,7 @@ verceptron_lib = static_library(
     'org/esgdev/verceptron/perceptron.vala',
     'org/esgdev/verceptron/multilayer_perceptron.vala',
   ),
-  dependencies: [glib_dep, gobject_dep],
+  dependencies: [glib_dep, gobject_dep, math_dep],  # Added math_dep
 )
 
 # Create the verceptron_lib dependency for tests to use
@@ -24,6 +24,6 @@ verceptron_lib_dep = declare_dependency(
 # Define the executable
 executable('verceptron',
   sources: verceptron_sources,
-  dependencies: [glib_dep, gobject_dep],
+  dependencies: [glib_dep, gobject_dep, math_dep],  # Added math_dep
   install: true,
 )

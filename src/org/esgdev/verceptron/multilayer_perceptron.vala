@@ -128,10 +128,6 @@ public class MultilayerPerceptron {
             }
         }
         
-        // 2. Backward pass to compute gradients
-        //double[,] weight_gradients = new double[weights.length[0], 1];
-        //double[] bias_gradients = new double[biases.length];
-        
         // Calculate output layer error
         int output_layer = layer_sizes.length - 1;
         int output_offset = activation_offsets[output_layer];
@@ -143,9 +139,130 @@ public class MultilayerPerceptron {
             double output = all_activations[output_offset + i];
             errors[i] = (output - targets[i]) * relu_derivative(z_values[last_z_offset + i]);
         }
+
+        // Arrays to store deltas for each layer
+        double[] current_deltas = errors;
         
-        // TODO: Propagate errors backwards and update weights
-        // Continue with backpropagation algorithm...
+        // Backpropagate the error and update weights
+        for (int l = layer_sizes.length - 2; l >= 0; l--) {
+            // Reset weight and bias indices for this layer
+            weight_index = 0;
+            bias_index = 0;
+            
+            // Skip to the weights/biases for the current layer
+            for (int prev_layer = 0; prev_layer < l; prev_layer++) {
+                weight_index += layer_sizes[prev_layer] * layer_sizes[prev_layer + 1];
+                bias_index += layer_sizes[prev_layer + 1];
+            }
+            
+            // Prepare deltas for the previous layer (if not input layer)
+            double[] next_deltas = null;
+            if (l > 0) {
+                next_deltas = new double[layer_sizes[l]];
+                // Initialize to zero
+                for (int i = 0; i < layer_sizes[l]; i++) {
+                    next_deltas[i] = 0;
+                }
+            }
+            
+            // Current layer activation offset
+            int current_activation_offset = activation_offsets[l];
+            int current_z_offset = (l > 0) ? z_offsets[l-1] : 0;
+            
+            // Update weights and biases for current layer
+            for (int j = 0; j < layer_sizes[l+1]; j++) {
+                // Update bias with the delta
+                biases[bias_index + j] -= learning_rate * current_deltas[j];
+                
+                // Update weights for this neuron
+                for (int i = 0; i < layer_sizes[l]; i++) {
+                    // Calculate weight index
+                    int w_idx = weight_index + i * layer_sizes[l+1] + j;
+                    
+                    // Update weight
+                    double weight_update = learning_rate * current_deltas[j] * 
+                                         all_activations[current_activation_offset + i];
+                    weights[w_idx, 0] -= weight_update;
+                    
+                    // Propagate error to previous layer (if not input layer)
+                    if (l > 0) {
+                        next_deltas[i] += current_deltas[j] * weights[w_idx, 0];
+                    }
+                }
+            }
+            
+            // Apply derivative for next layer's deltas
+            if (l > 0) {
+                for (int i = 0; i < layer_sizes[l]; i++) {
+                    next_deltas[i] *= relu_derivative(z_values[current_z_offset + i]);
+                }
+                // Set the calculated deltas as current for the next iteration
+                current_deltas = next_deltas;
+            }
+        }
+    }
+    
+    // Train the network for multiple epochs
+    public void fit(double[,] x_train, double[] y_train, int epochs, bool verbose = false) {
+        int samples = x_train.length[0];
+        
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            double sum_error = 0;
+            
+            // Train on all samples
+            for (int i = 0; i < samples; i++) {
+                // Extract input features
+                double[] input = new double[layer_sizes[0]];
+                for (int j = 0; j < input.length; j++) {
+                    input[j] = x_train[i, j];
+                }
+                
+                // Get target
+                double[] target = new double[layer_sizes[layer_sizes.length-1]];
+                // Assuming single output for now, can be extended for multi-output
+                target[0] = y_train[i];
+                
+                // Train on this sample
+                train(input, target);
+                
+                // Calculate error for progress reporting
+                if (verbose) {
+                    double[] output = forward(input);
+                    sum_error += Math.pow(output[0] - target[0], 2);
+                }
+            }
+            
+            // Report progress if verbose
+            if (verbose && epoch % 100 == 0) {
+                double mse = sum_error / samples;
+                stdout.printf("Epoch %d: MSE = %.6f\n", epoch, mse);
+            }
+        }
+    }
+    
+    // Predict output for a batch of inputs
+    public double[] predict_batch(double[,] x) {
+        int samples = x.length[0];
+        int output_size = layer_sizes[layer_sizes.length-1];
+        double[] predictions = new double[samples * output_size];
+        
+        for (int i = 0; i < samples; i++) {
+            // Extract features
+            double[] input = new double[layer_sizes[0]];
+            for (int j = 0; j < input.length; j++) {
+                input[j] = x[i, j];
+            }
+            
+            // Get prediction
+            double[] output = forward(input);
+            
+            // Store prediction
+            for (int j = 0; j < output_size; j++) {
+                predictions[i * output_size + j] = output[j];
+            }
+        }
+        
+        return predictions;
     }
 }
 

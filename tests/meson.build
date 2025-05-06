@@ -9,7 +9,8 @@ test_executable = executable(
   dependencies: [
     glib_dep,
     gobject_dep,
-    verceptron_lib_dep  # Use the library dependency declared in src/meson.build
+    math_dep,  # Added math_dep
+    verceptron_lib_dep
   ],
   install: false
 )

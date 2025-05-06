@@ -20,6 +20,7 @@ add_project_arguments('-Wno-incompatible-pointer-types', language : 'c')
 required_glib_version = '>= 2.56'
 glib_dep = dependency('glib-2.0', version : required_glib_version, required : true)
 gobject_dep = dependency('gobject-2.0', version : required_glib_version, required : true)
+math_dep = meson.get_compiler('c').find_library('m', required : true)  # Add math library
 
 # Configuration data for config.h
 conf_data = configuration_data()
