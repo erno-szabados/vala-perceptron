@@ -44,8 +44,9 @@ configure_file(
 
 # Source files for the executable (from src/Makefile.am verceptron_SOURCES)
 verceptron_sources = [
-  'src/verceptron.vala',
-  'src/perceptron.vala'
+  'src/org/esgdev/verceptron/verceptron.vala',
+  'src/org/esgdev/verceptron/perceptron.vala',
+  'src/org/esgdev/verceptron/multilayer_perceptron.vala',
 ]
 
 # Define the executable (from src/Makefile.am bin_PROGRAMS)
