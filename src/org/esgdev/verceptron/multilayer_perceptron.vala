@@ -176,9 +176,12 @@ public class MultilayerPerceptron {
                 
                 // Update weights for this neuron
                 for (int i = 0; i < layer_sizes[l]; i++) {
-                    // Calculate weight index
-                    int w_idx = weight_index + i * layer_sizes[l+1] + j;
+                    // Calculate weight index - CORRECTED
+                    int w_idx = weight_index + j * layer_sizes[l] + i;
                     
+                    // Store original weight for delta propagation
+                    double original_weight_for_delta_prop = weights[w_idx, 0];
+
                     // Update weight
                     double weight_update = learning_rate * current_deltas[j] * 
                                          all_activations[current_activation_offset + i];
@@ -186,7 +189,8 @@ public class MultilayerPerceptron {
                     
                     // Propagate error to previous layer (if not input layer)
                     if (l > 0) {
-                        next_deltas[i] += current_deltas[j] * weights[w_idx, 0];
+                        // Use original weight for propagating error - CORRECTED
+                        next_deltas[i] += current_deltas[j] * original_weight_for_delta_prop;
                     }
                 }
             }
