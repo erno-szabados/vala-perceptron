@@ -50,7 +50,7 @@ public class MultilayerPerceptron {
                 for (int i = 0; i < layer_sizes[l]; i++) {
                     weighted_sum += activations[i] * weights[weight_index++, 0];
                 }
-                next_activations[j] = relu(weighted_sum); // Using ReLU as default activation
+                next_activations[j] = leaky_relu(weighted_sum); // Using Leaky ReLU
             }
 
             activations = next_activations;
@@ -59,14 +59,25 @@ public class MultilayerPerceptron {
         return activations;
     }
 
-    // Activation function (ReLU)
-    private double relu(double x) {
-        return (x > 0) ? x : 0;
-    }
+    //  // Activation function (ReLU)
+    //  private double relu(double x) {
+    //      return (x > 0) ? x : 0;
+    //  }
     
-    // Derivative of ReLU
-    private double relu_derivative(double x) {
-        return (x > 0) ? 1.0 : 0.0;
+    //  // Derivative of ReLU
+    //  private double relu_derivative(double x) {
+    //      return (x > 0) ? 1.0 : 0.0;
+    //  }
+
+    // Leaky ReLU
+    private const double LEAKY_RELU_ALPHA = 0.01;
+    private double leaky_relu(double x) {
+        return (x > 0) ? x : LEAKY_RELU_ALPHA * x;
+    }
+
+    // Derivative of Leaky ReLU
+    private double leaky_relu_derivative(double x) {
+        return (x > 0) ? 1.0 : LEAKY_RELU_ALPHA;
     }
 
     // Backpropagation and training
@@ -124,7 +135,7 @@ public class MultilayerPerceptron {
                 z_values[z_offset + j] = weighted_sum;
                 
                 // Apply activation function and store the result
-                all_activations[next_activation_offset + j] = relu(weighted_sum);
+                all_activations[next_activation_offset + j] = leaky_relu(weighted_sum);
             }
         }
         
@@ -137,7 +148,7 @@ public class MultilayerPerceptron {
         
         for (int i = 0; i < layer_sizes[output_layer]; i++) {
             double output = all_activations[output_offset + i];
-            errors[i] = (output - targets[i]) * relu_derivative(z_values[last_z_offset + i]);
+            errors[i] = (output - targets[i]) * leaky_relu_derivative(z_values[last_z_offset + i]);
         }
 
         // Arrays to store deltas for each layer
@@ -198,7 +209,7 @@ public class MultilayerPerceptron {
             // Apply derivative for next layer's deltas
             if (l > 0) {
                 for (int i = 0; i < layer_sizes[l]; i++) {
-                    next_deltas[i] *= relu_derivative(z_values[current_z_offset + i]);
+                    next_deltas[i] *= leaky_relu_derivative(z_values[current_z_offset + i]);
                 }
                 // Set the calculated deltas as current for the next iteration
                 current_deltas = next_deltas;
