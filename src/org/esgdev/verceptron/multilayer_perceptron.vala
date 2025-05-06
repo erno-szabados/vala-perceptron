@@ -1,9 +1,12 @@
 using GLib;
 
+namespace org.esgdev.verceptron {
+
 public class MultilayerPerceptron {
-    private double[,] weights; // 2D array for weights
-    private double[] biases;   // 1D array for biases
-    private int[] layer_sizes; // Number of neurons in each layer
+    // Make properties public for testing
+    public double[,] weights { get; private set; } // 2D array for weights
+    public double[] biases { get; private set; }   // 1D array for biases
+    public int[] layer_sizes { get; private set; } // Number of neurons in each layer
     private double learning_rate;
 
     // Constructor
@@ -66,3 +69,5 @@ public class MultilayerPerceptron {
         // Placeholder for backpropagation logic
     }
 }
+
+} // end namespace
