@@ -43,3 +43,9 @@
 /=
 /compile
 /config.h
+
+# meson artifacts
+/build/
+*.ninja
+*.ninja_deps
+*.ninja_log
