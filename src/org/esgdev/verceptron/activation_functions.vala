@@ -3,6 +3,9 @@ using GLib;
 namespace org.esgdev.verceptron {
     public interface ActivationFunction : Object {
         public abstract double activate(double x);
+        // TODO a better approach is to have a backward function instead of a derivative
+        // this can work for all activation functions, including softmax, 
+        // that have a difficult derivative (that we dont have to calculate)
         public abstract double derivative(double x);
     }
 
