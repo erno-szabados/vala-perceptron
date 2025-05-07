@@ -33,9 +33,30 @@ public class MultilayerPerceptron {
         weights = new double[total_weights, 1];
         biases = new double[total_biases];
         var random = new Rand();
-        for (int i = 0; i < total_weights; i++) {
-            weights[i, 0] = (random.next_double() * 2.0) - 1.0;
+        int weight_index = 0;
+
+        for (int l = 0; l < this.layer_sizes.length - 1; l++) {
+            int n_in = this.layer_sizes[l];
+            int n_out = this.layer_sizes[l + 1];
+            ActivationFunction activation_fn = this.layer_configs[l + 1].activation_function;
+
+            double scale;
+            if (activation_fn is ReLUActivation || activation_fn is LeakyReLUActivation) {
+                // He Initialization
+                scale = Math.sqrt(2.0 / n_in);
+            } else if (activation_fn is SigmoidActivation || activation_fn is TanhActivation) {
+                // Xavier Initialization
+                scale = Math.sqrt(1.0 / n_in);
+            } else {
+                // Default to small random values
+                scale = 0.01;
+            }
+
+            for (int i = 0; i < n_in * n_out; i++) {
+                weights[weight_index++, 0] = random.next_double() * 2.0 * scale - scale;
+            }
         }
+
         for (int i = 0; i < total_biases; i++) {
             biases[i] = (random.next_double() * 2.0) - 1.0;
         }

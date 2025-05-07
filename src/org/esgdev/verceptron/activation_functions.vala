@@ -47,5 +47,16 @@ namespace org.esgdev.verceptron {
             return (x > 0) ? 1.0 : ALPHA;
         }
     }
+
+    public class TanhActivation :  Object, ActivationFunction {
+        public double activate(double x) {
+            return Math.tanh(x);
+        }
+
+        public double derivative(double x) {
+            double tanh_x = activate(x);
+            return 1.0 - tanh_x * tanh_x;
+        }
+    }
 }
 
