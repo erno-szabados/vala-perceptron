@@ -9,11 +9,29 @@ test_executable = executable(
   dependencies: [
     glib_dep,
     gobject_dep,
-    math_dep,  # Added math_dep
+    math_dep,
     verceptron_lib_dep
   ],
   install: false
 )
 
-# Add the test to Meson's test suite
-test('verceptron_tests', test_executable)
+# Add individual test cases to Meson's test suite, assigning them to suites
+test('mlp_constructor_initialization', test_executable,
+  args : ['-p', '/multilayer_perceptron/constructor_initialization'],
+  suite: 'core'
+)
+
+test('mlp_forward_propagation', test_executable,
+  args : ['-p', '/multilayer_perceptron/forward_propagation'],
+  suite: 'core'
+)
+
+test('mlp_backpropagation_xor', test_executable,
+  args : ['-p', '/multilayer_perceptron/backpropagation_xor'],
+  suite: 'learning'
+)
+
+test('mlp_backpropagation_binary_classification', test_executable,
+  args : ['-p', '/multilayer_perceptron/backpropagation_binary_classification'],
+  suite: 'learning'
+)
