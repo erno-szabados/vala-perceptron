@@ -3,84 +3,67 @@ using GLib;
 namespace org.esgdev.verceptron {
 
 public class MultilayerPerceptron {
-    // Make properties public for testing
-    public double[,] weights { get; private set; } // 2D array for weights
-    public double[] biases { get; private set; }   // 1D array for biases
-    public int[] layer_sizes { get; private set; } // Number of neurons in each layer
+    public double[,] weights { get; private set; }
+    public double[] biases { get; private set; }
+    // Store LayerDefinition array
+    private LayerDefinition[] layer_configs { get; set; }
+    // layer_sizes can be derived or stored if frequently used
+    public int[] layer_sizes { get; private set; }
     private double learning_rate;
 
-    // Constructor
-    public MultilayerPerceptron (int[] layer_sizes, double learning_rate = 0.1) {
-        this.layer_sizes = layer_sizes;
+    // Modified Constructor
+    public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1) {
+        this.layer_configs = layer_configs;
         this.learning_rate = learning_rate;
 
-        // Calculate total number of weights and biases
+        // Derive layer_sizes from layer_configs
+        this.layer_sizes = new int[layer_configs.length];
+        for (int i = 0; i < layer_configs.length; i++) {
+            this.layer_sizes[i] = layer_configs[i].num_neurons;
+        }
+
         int total_weights = 0;
         int total_biases = 0;
-        for (int l = 0; l < layer_sizes.length - 1; l++) {
-            total_weights += layer_sizes[l] * layer_sizes[l + 1];
-            total_biases += layer_sizes[l + 1];
+        // Use this.layer_sizes which is now derived
+        for (int l = 0; l < this.layer_sizes.length - 1; l++) {
+            total_weights += this.layer_sizes[l] * this.layer_sizes[l + 1];
+            total_biases += this.layer_sizes[l + 1];
         }
 
-        // Initialize weights and biases
-        weights = new double[total_weights, 1]; // Flattened 2D array
+        weights = new double[total_weights, 1];
         biases = new double[total_biases];
         var random = new Rand();
-
-        // Fill weights and biases with random values
         for (int i = 0; i < total_weights; i++) {
-            weights[i, 0] = (random.next_double() * 2.0) - 1.0; // Random [-1, 1)
+            weights[i, 0] = (random.next_double() * 2.0) - 1.0;
         }
         for (int i = 0; i < total_biases; i++) {
-            biases[i] = (random.next_double() * 2.0) - 1.0; // Random [-1, 1)
+            biases[i] = (random.next_double() * 2.0) - 1.0;
         }
     }
 
-    // Forward propagation
     public double[] forward(double[] inputs) {
         double[] activations = inputs;
         int weight_index = 0;
         int bias_index = 0;
 
-        for (int l = 0; l < layer_sizes.length - 1; l++) {
-            double[] next_activations = new double[layer_sizes[l + 1]];
+        for (int l = 0; l < this.layer_sizes.length - 1; l++) {
+            double[] next_activations = new double[this.layer_sizes[l + 1]];
+            // Get the activation function for the current layer being computed (layer l+1)
+            ActivationFunction current_activation_fn = this.layer_configs[l + 1].activation_function;
 
-            for (int j = 0; j < layer_sizes[l + 1]; j++) {
+            for (int j = 0; j < this.layer_sizes[l + 1]; j++) {
                 double weighted_sum = biases[bias_index++];
-                for (int i = 0; i < layer_sizes[l]; i++) {
+                for (int i = 0; i < this.layer_sizes[l]; i++) {
                     weighted_sum += activations[i] * weights[weight_index++, 0];
                 }
-                next_activations[j] = leaky_relu(weighted_sum); // Using Leaky ReLU
+                // Use the layer-specific activation function
+                next_activations[j] = current_activation_fn.activate(weighted_sum);
             }
-
             activations = next_activations;
         }
-
         return activations;
     }
 
-    //  // Activation function (ReLU)
-    //  private double relu(double x) {
-    //      return (x > 0) ? x : 0;
-    //  }
-    
-    //  // Derivative of ReLU
-    //  private double relu_derivative(double x) {
-    //      return (x > 0) ? 1.0 : 0.0;
-    //  }
-
-    // Leaky ReLU
-    private const double LEAKY_RELU_ALPHA = 0.01;
-    private double leaky_relu(double x) {
-        return (x > 0) ? x : LEAKY_RELU_ALPHA * x;
-    }
-
-    // Derivative of Leaky ReLU
-    private double leaky_relu_derivative(double x) {
-        return (x > 0) ? 1.0 : LEAKY_RELU_ALPHA;
-    }
-
-    // Backpropagation and training
     public void train(double[] inputs, double[] targets) {
         // 1. Use arrays and offsets instead of jagged arrays 
         // Create an array to store all activations for all layers
@@ -123,7 +106,8 @@ public class MultilayerPerceptron {
             int current_activation_offset = activation_offsets[l];
             int next_activation_offset = activation_offsets[l + 1];
             int z_offset = z_offsets[l];
-            
+            ActivationFunction current_activation_fn = this.layer_configs[l + 1].activation_function;
+
             for (int j = 0; j < layer_sizes[l + 1]; j++) {
                 double weighted_sum = biases[bias_index++];
                 
@@ -135,7 +119,7 @@ public class MultilayerPerceptron {
                 z_values[z_offset + j] = weighted_sum;
                 
                 // Apply activation function and store the result
-                all_activations[next_activation_offset + j] = leaky_relu(weighted_sum);
+                all_activations[next_activation_offset + j] = current_activation_fn.activate(weighted_sum);
             }
         }
         
@@ -143,12 +127,13 @@ public class MultilayerPerceptron {
         int output_layer = layer_sizes.length - 1;
         int output_offset = activation_offsets[output_layer];
         int last_z_offset = z_offsets[output_layer - 1];
+        ActivationFunction output_activation_fn = this.layer_configs[output_layer].activation_function;
         
         double[] errors = new double[layer_sizes[output_layer]];
         
         for (int i = 0; i < layer_sizes[output_layer]; i++) {
             double output = all_activations[output_offset + i];
-            errors[i] = (output - targets[i]) * leaky_relu_derivative(z_values[last_z_offset + i]);
+            errors[i] = (output - targets[i]) * output_activation_fn.derivative(z_values[last_z_offset + i]);
         }
 
         // Arrays to store deltas for each layer
@@ -179,6 +164,7 @@ public class MultilayerPerceptron {
             // Current layer activation offset
             int current_activation_offset = activation_offsets[l];
             int current_z_offset = (l > 0) ? z_offsets[l-1] : 0;
+            ActivationFunction hidden_layer_activation_fn = this.layer_configs[l].activation_function;
             
             // Update weights and biases for current layer
             for (int j = 0; j < layer_sizes[l+1]; j++) {
@@ -209,7 +195,7 @@ public class MultilayerPerceptron {
             // Apply derivative for next layer's deltas
             if (l > 0) {
                 for (int i = 0; i < layer_sizes[l]; i++) {
-                    next_deltas[i] *= leaky_relu_derivative(z_values[current_z_offset + i]);
+                    next_deltas[i] *= hidden_layer_activation_fn.derivative(z_values[current_z_offset + i]);
                 }
                 // Set the calculated deltas as current for the next iteration
                 current_deltas = next_deltas;

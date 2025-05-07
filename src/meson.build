@@ -2,6 +2,8 @@ verceptron_sources = files(
   'org/esgdev/verceptron/verceptron.vala',
   'org/esgdev/verceptron/perceptron.vala',
   'org/esgdev/verceptron/multilayer_perceptron.vala',
+  'org/esgdev/verceptron/activation_functions.vala',
+  'org/esgdev/verceptron/layer_definition.vala',
 )
 
 # Create a static library for the verceptron core functionality
