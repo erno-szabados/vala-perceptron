@@ -41,8 +41,8 @@ void test_forward_propagation () {
 
 void test_backpropagation_xor() {
     var layer_configs = new LayerDefinition[] {
-        new LayerDefinition(2, new ReLUActivation()),
-        new LayerDefinition(3, new ReLUActivation()),
+        new LayerDefinition(2, new LeakyReLUActivation()),
+        new LayerDefinition(3, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
     var mlp = new MultilayerPerceptron(layer_configs, 0.1);
@@ -79,8 +79,8 @@ void test_backpropagation_xor() {
 
 void test_backpropagation_binary_classification() {
     var layer_configs = new LayerDefinition[] {
-        new LayerDefinition(2, new ReLUActivation()),
-        new LayerDefinition(4, new ReLUActivation()),
+        new LayerDefinition(2, new LeakyReLUActivation()),
+        new LayerDefinition(4, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
     var mlp = new MultilayerPerceptron(layer_configs, 0.05);

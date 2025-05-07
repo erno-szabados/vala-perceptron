@@ -37,7 +37,7 @@ namespace org.esgdev.verceptron {
         }
     }
 
-    public class LeakyRELUActivation :  Object, ActivationFunction {
+    public class LeakyReLUActivation :  Object, ActivationFunction {
         private const double ALPHA = 0.01;
         public double activate(double x) {
             return (x > 0) ? x : ALPHA * x;
