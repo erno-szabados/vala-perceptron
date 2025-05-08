@@ -42,7 +42,7 @@ void test_forward_propagation () {
 void test_backpropagation_xor() {
     var layer_configs = new LayerDefinition[] {
         new LayerDefinition(2, new LeakyReLUActivation()),
-        new LayerDefinition(3, new LeakyReLUActivation()),
+        new LayerDefinition(5, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
     var mlp = new MultilayerPerceptron(layer_configs, 0.02);
@@ -58,7 +58,7 @@ void test_backpropagation_xor() {
     double[] y_train = { 0.0, 1.0, 1.0, 0.0 };
     
     // Train the network
-    mlp.fit(x_train, y_train, 10000, false);
+    mlp.fit(x_train, y_train, 3000, true);
     
     // Test predictions
     double[] predictions = mlp.predict_batch(x_train);
@@ -100,7 +100,7 @@ void test_backpropagation_binary_classification() {
     double[] y_train = { 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0 };
     
     // Train the network with verbose output
-    mlp.fit(x_train, y_train, 10000, true);
+    mlp.fit(x_train, y_train, 2000, true);
     
     // Test predictions
     double[] predictions = mlp.predict_batch(x_train);
