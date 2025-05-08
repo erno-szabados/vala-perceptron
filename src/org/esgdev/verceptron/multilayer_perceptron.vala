@@ -144,83 +144,81 @@ public class MultilayerPerceptron {
             }
         }
         
-        // Calculate output layer error
-        int output_layer = layer_sizes.length - 1;
-        int output_offset = activation_offsets[output_layer];
-        int last_z_offset = z_offsets[output_layer - 1];
-        ActivationFunction output_activation_fn = this.layer_configs[output_layer].activation_function;
+        // Calculate output layer error (dL/dz for output layer)
+        int output_layer_idx = layer_sizes.length - 1;
+        int output_activation_offset = activation_offsets[output_layer_idx];
+        // z_offsets[k] is for layer k+1, so z_offsets[output_layer_idx - 1] is for output_layer_idx
+        int output_z_offset = z_offsets[output_layer_idx - 1]; 
+        ActivationFunction output_activation_fn = this.layer_configs[output_layer_idx].activation_function;
         
-        double[] errors = new double[layer_sizes[output_layer]];
+        double[] errors = new double[layer_sizes[output_layer_idx]]; // This will store dL/dz for the output layer
         
-        for (int i = 0; i < layer_sizes[output_layer]; i++) {
-            double output = all_activations[output_offset + i];
-            errors[i] = (output - targets[i]) * output_activation_fn.derivative(z_values[last_z_offset + i]);
+        for (int i = 0; i < layer_sizes[output_layer_idx]; i++) {
+            double output_activation_val = all_activations[output_activation_offset + i]; // a_i^(L)
+            double dL_da_output = output_activation_val - targets[i]; // d(Loss)/da_i^(L)
+            double z_val_output = z_values[output_z_offset + i]; // z_i^(L)
+            errors[i] = output_activation_fn.backward(z_val_output, dL_da_output); // errors[i] is now dL/dz_i^(L)
         }
 
-        // Arrays to store deltas for each layer
-        double[] current_deltas = errors;
+        double[] current_deltas = errors; // current_deltas are dL/dz for the current layer being processed in backprop (starts with output layer)
         
-        // Backpropagate the error and update weights
-        for (int l = layer_sizes.length - 2; l >= 0; l--) {
-            // Reset weight and bias indices for this layer
-            weight_index = 0;
-            bias_index = 0;
-            
-            // Skip to the weights/biases for the current layer
-            for (int prev_layer = 0; prev_layer < l; prev_layer++) {
-                weight_index += layer_sizes[prev_layer] * layer_sizes[prev_layer + 1];
-                bias_index += layer_sizes[prev_layer + 1];
+        // Backpropagate the error: loop from layer L-1 down to layer 1 (0-indexed: layer_sizes.length-2 down to 1)
+        // For l=0 (input layer), we update weights connecting to layer 1, but don't compute deltas for layer 0 itself for further backprop.
+        for (int l = layer_sizes.length - 2; l >= 0; l--) { // l is the index of the "from" layer in W_ij (from l to l+1)
+            // Reset weight and bias indices for the connection from layer l to layer l+1
+            int current_layer_weight_index = 0;
+            int current_layer_bias_index = 0;
+            for (int prev_layer_idx = 0; prev_layer_idx < l; prev_layer_idx++) {
+                current_layer_weight_index += layer_sizes[prev_layer_idx] * layer_sizes[prev_layer_idx + 1];
+                current_layer_bias_index += layer_sizes[prev_layer_idx + 1];
             }
             
-            // Prepare deltas for the previous layer (if not input layer)
-            double[] next_deltas = null;
-            if (l > 0) {
-                next_deltas = new double[layer_sizes[l]];
-                // Initialize to zero
-                for (int i = 0; i < layer_sizes[l]; i++) {
-                    next_deltas[i] = 0;
-                }
+            double[] dL_da_layer_l = new double[layer_sizes[l]]; // To store dL/da for neurons in layer l
+            // Initialize to zero
+            for (int i = 0; i < layer_sizes[l]; i++) {
+                dL_da_layer_l[i] = 0;
             }
             
-            // Current layer activation offset
-            int current_activation_offset = activation_offsets[l];
-            int current_z_offset = (l > 0) ? z_offsets[l-1] : 0;
-            ActivationFunction hidden_layer_activation_fn = this.layer_configs[l].activation_function;
-            
-            // Update weights and biases for current layer
-            for (int j = 0; j < layer_sizes[l+1]; j++) {
-                // Update bias with the delta
-                biases[bias_index + j] -= learning_rate * current_deltas[j];
-                
-                // Update weights for this neuron
-                for (int i = 0; i < layer_sizes[l]; i++) {
-                    // Calculate weight index - CORRECTED
-                    int w_idx = weight_index + j * layer_sizes[l] + i;
-                    
-                    // Store original weight for delta propagation
-                    double original_weight_for_delta_prop = weights[w_idx, 0];
+            int activation_offset_layer_l = activation_offsets[l]; // Activations a^(l)
 
-                    // Update weight
-                    double weight_update = learning_rate * current_deltas[j] * 
-                                         all_activations[current_activation_offset + i];
-                    weights[w_idx, 0] -= weight_update;
+            // Update weights and biases connecting layer l to layer l+1
+            // And compute dL/da for layer l
+            for (int j = 0; j < layer_sizes[l+1]; j++) { // j is neuron index in layer l+1
+                // current_deltas[j] is dL/dz_j^(l+1) (delta for neuron j in layer l+1)
+                
+                // Update bias for neuron j in layer l+1
+                biases[current_layer_bias_index + j] -= learning_rate * current_deltas[j];
+                
+                for (int i = 0; i < layer_sizes[l]; i++) { // i is neuron index in layer l
+                    // Weight w_ij connecting neuron i (layer l) to neuron j (layer l+1)
+                    int w_idx = current_layer_weight_index + j * layer_sizes[l] + i;
                     
-                    // Propagate error to previous layer (if not input layer)
-                    if (l > 0) {
-                        // Use original weight for propagating error - CORRECTED
-                        next_deltas[i] += current_deltas[j] * original_weight_for_delta_prop;
-                    }
+                    double original_weight = weights[w_idx, 0];
+
+                    // Update weight w_ij
+                    double weight_gradient = current_deltas[j] * all_activations[activation_offset_layer_l + i]; // dL/dz_j^(l+1) * a_i^(l)
+                    weights[w_idx, 0] -= learning_rate * weight_gradient;
+                    
+                    // Accumulate dL/da_i^(l) = sum_j (dL/dz_j^(l+1) * w_ij^(original))
+                    dL_da_layer_l[i] += current_deltas[j] * original_weight;
                 }
             }
             
-            // Apply derivative for next layer's deltas
+            // If layer l is a hidden layer (l > 0), compute dL/dz for layer l (these become current_deltas for next iteration)
             if (l > 0) {
+                double[] dL_dz_layer_l = new double[layer_sizes[l]];
+                ActivationFunction activation_fn_l = this.layer_configs[l].activation_function;
+                // z_values for layer l are at z_offsets[l-1]
+                int z_offset_l = z_offsets[l-1]; 
+
                 for (int i = 0; i < layer_sizes[l]; i++) {
-                    next_deltas[i] *= hidden_layer_activation_fn.derivative(z_values[current_z_offset + i]);
+                    double z_value_l = z_values[z_offset_l + i]; // z_i^(l)
+                    dL_dz_layer_l[i] = activation_fn_l.backward(z_value_l, dL_da_layer_l[i]); // dL/dz_i^(l)
                 }
-                // Set the calculated deltas as current for the next iteration
-                current_deltas = next_deltas;
+                current_deltas = dL_dz_layer_l;
             }
+            // If l == 0, current_deltas (which are dL/dz for layer 1) are used in this iteration to update weights/biases
+            // connecting layer 0 to layer 1. We don't need to compute dL/dz for layer 0 for further backpropagation.
         }
     }
     
