@@ -48,4 +48,26 @@ This is a Vala project implementing neural network components, including:
 - tests/org/esgdev/verceptron/test_activation_functions.vala
 - tests/org/esgdev/verceptron/test_error_functions.vala
 
+# Vala Language Syntax
+- check files in the following folder for the precise vala synax:
+- valadoc/attributes.rst
+- valadoc/classes.rst
+- valadoc/concepts.rst
+- valadoc/delegates.rst
+- valadoc/enumerated-types-enums.rst
+- valadoc/errors.rst
+- valadoc/expressions.rst
+- valadoc/generics.rst
+- valadoc/gidl-metadata-format.rst
+- valadoc/gir-metadata-format.rst
+- valadoc/index.rst
+- valadoc/interfaces.rst
+- valadoc/methods.rst
+- valadoc/namespaces.rst
+- valadoc/overview.rst
+- valadoc/preprocessor.rst
+- valadoc/statements.rst
+- valadoc/structs.rst
+- valadoc/types.rst
+
 # End of instructions

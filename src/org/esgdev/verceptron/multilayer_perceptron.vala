@@ -2,6 +2,17 @@ using GLib;
 
 namespace org.esgdev.verceptron {
 
+// MultilayerPerceptron: A fully-connected feedforward neural network supporting multiple layers,
+// custom activation functions, error functions, and Adam optimizer.
+//
+// Usage:
+//   - Construct with an array of LayerDefinition specifying the architecture and activations.
+//   - Call fit() to train on data, train() for a single sample, and forward() for inference.
+//   - Supports batch prediction and custom error functions.
+//
+// Example:
+//   var mlp = new MultilayerPerceptron(layer_defs, 0.01, new MeanSquaredError());
+//   mlp.fit(x_train, y_train, 1000);
 public class MultilayerPerceptron {
     public double[,] weights { get; private set; }
     public double[] biases { get; private set; }
@@ -20,6 +31,12 @@ public class MultilayerPerceptron {
     private double epsilon = 1e-8;
     private int t = 0; // Time step for bias correction
 
+    /**
+     * Construct a multilayer perceptron with the given architecture and options.
+     * @param layer_configs Array of LayerDefinition specifying each layer's size and activation
+     * @param learning_rate Learning rate for Adam optimizer
+     * @param error_function Error function to use (default: MeanSquaredError)
+     */
     public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1, ErrorFunction? error_function = null) {
         this.layer_configs = layer_configs;
         this.learning_rate = learning_rate;
@@ -75,6 +92,11 @@ public class MultilayerPerceptron {
         }
     }
 
+    /**
+     * Perform a forward pass through the network.
+     * @param inputs Input vector (length must match input layer)
+     * @return Output vector from the final layer
+     */
     public double[] forward(double[] inputs) {
         double[] activations = inputs;
 
@@ -104,51 +126,47 @@ public class MultilayerPerceptron {
         return activations;
     }
 
-    public void train(double[] inputs, double[] targets) {
-        this.t++; // Increment Adam time step
+    // Helper struct to hold forward pass results
+    private struct ForwardPassResult {
+        public double[] all_activations;
+        public int[] activation_offsets;
+        public double[] z_values;
+        public int[] z_offsets;
+    }
 
-        // Create an array to store all activations for all layers
+    private ForwardPassResult forward_with_tracking(double[] inputs) {
         int total_activations = 0;
         for (int i = 0; i < layer_sizes.length; i++) {
             total_activations += layer_sizes[i];
         }
         double[] all_activations = new double[total_activations];
         int[] activation_offsets = new int[layer_sizes.length];
-        
         int offset = 0;
         for (int i = 0; i < layer_sizes.length; i++) {
             activation_offsets[i] = offset;
             offset += layer_sizes[i];
         }
-        
         for (int i = 0; i < inputs.length; i++) {
             all_activations[i] = inputs[i];
         }
-        
         int total_z_values = total_activations - layer_sizes[0];
         double[] z_values = new double[total_z_values];
         int[] z_offsets = new int[layer_sizes.length - 1];
-        
         offset = 0;
         for (int i = 0; i < layer_sizes.length - 1; i++) {
             z_offsets[i] = offset;
             offset += layer_sizes[i + 1];
         }
-        
-        // Recalculate global weight and bias indices for forward pass in train
         int global_weight_idx = 0;
         int global_bias_idx = 0;
-        
         for (int l = 0; l < layer_sizes.length - 1; l++) {
             int current_activation_offset = activation_offsets[l];
             int next_activation_offset = activation_offsets[l + 1];
-            int current_z_offset = z_offsets[l]; // z_values for layer l+1
+            int current_z_offset = z_offsets[l];
             ActivationFunction current_activation_fn = this.layer_configs[l + 1].activation_function;
-
-            for (int j = 0; j < layer_sizes[l + 1]; j++) { // Neuron in layer l+1
-                double weighted_sum = biases[global_bias_idx + j]; 
-                
-                for (int i = 0; i < layer_sizes[l]; i++) { // Neuron in layer l
+            for (int j = 0; j < layer_sizes[l + 1]; j++) {
+                double weighted_sum = biases[global_bias_idx + j];
+                for (int i = 0; i < layer_sizes[l]; i++) {
                     int w_flat_idx = global_weight_idx + j * layer_sizes[l] + i;
                     weighted_sum += all_activations[current_activation_offset + i] * weights[w_flat_idx, 0];
                 }
@@ -158,73 +176,79 @@ public class MultilayerPerceptron {
             global_weight_idx += layer_sizes[l] * layer_sizes[l+1];
             global_bias_idx += layer_sizes[l+1];
         }
+        ForwardPassResult result = { all_activations, activation_offsets, z_values, z_offsets };
+        return result;
+    }
 
+    private double[] compute_output_layer_deltas(double[] targets, ForwardPassResult fwd) {
         int output_layer_idx = layer_sizes.length - 1;
-        int output_activation_offset = activation_offsets[output_layer_idx];
-        int output_z_offset = z_offsets[output_layer_idx - 1]; 
+        int output_activation_offset = fwd.activation_offsets[output_layer_idx];
+        int output_z_offset = fwd.z_offsets[output_layer_idx - 1];
         ActivationFunction output_activation_fn = this.layer_configs[output_layer_idx].activation_function;
-        
         double[] errors = new double[layer_sizes[output_layer_idx]];
-        
         for (int i = 0; i < layer_sizes[output_layer_idx]; i++) {
-            double output_activation_val = all_activations[output_activation_offset + i];
+            double output_activation_val = fwd.all_activations[output_activation_offset + i];
             double dL_da_output = this.error_function.backwards(targets[i], output_activation_val);
-            double z_val_output = z_values[output_z_offset + i];
+            double z_val_output = fwd.z_values[output_z_offset + i];
             errors[i] = output_activation_fn.backward(z_val_output, dL_da_output);
         }
+        return errors;
+    }
 
-        double[] current_deltas = errors; 
-        
+    private void adam_update_weight(int w_idx, double grad) {
+        m_weights[w_idx] = beta1 * m_weights[w_idx] + (1 - beta1) * grad;
+        v_weights[w_idx] = beta2 * v_weights[w_idx] + (1 - beta2) * (grad * grad);
+        double m_hat = m_weights[w_idx] / (1 - Math.pow(beta1, this.t));
+        double v_hat = v_weights[w_idx] / (1 - Math.pow(beta2, this.t));
+        weights[w_idx, 0] -= learning_rate * m_hat / (Math.sqrt(v_hat) + epsilon);
+    }
+
+    private void adam_update_bias(int bias_idx, double grad) {
+        m_biases[bias_idx] = beta1 * m_biases[bias_idx] + (1 - beta1) * grad;
+        v_biases[bias_idx] = beta2 * v_biases[bias_idx] + (1 - beta2) * (grad * grad);
+        double m_hat = m_biases[bias_idx] / (1 - Math.pow(beta1, this.t));
+        double v_hat = v_biases[bias_idx] / (1 - Math.pow(beta2, this.t));
+        biases[bias_idx] -= learning_rate * m_hat / (Math.sqrt(v_hat) + epsilon);
+    }
+
+    /**
+     * Train the network on a single input-target pair (one step of backpropagation and Adam update).
+     * @param inputs Input vector
+     * @param targets Target output vector
+     */
+    public void train(double[] inputs, double[] targets) {
+        this.t++;
+        var fwd = forward_with_tracking(inputs);
+        double[] current_deltas = compute_output_layer_deltas(targets, fwd);
         for (int l = layer_sizes.length - 2; l >= 0; l--) {
             int current_layer_num_neurons = layer_sizes[l];
             int next_layer_num_neurons = layer_sizes[l+1];
-            
-            int activation_offset_layer_l = activation_offsets[l];
-            
+            int activation_offset_layer_l = fwd.activation_offsets[l];
             int weight_start_index_for_layer = 0;
             int bias_start_index_for_layer = 0;
             for (int prev_l = 0; prev_l < l; prev_l++) {
                 weight_start_index_for_layer += layer_sizes[prev_l] * layer_sizes[prev_l + 1];
                 bias_start_index_for_layer += layer_sizes[prev_l + 1];
             }
-
             double[] dL_da_layer_l = new double[current_layer_num_neurons];
-
-            for (int j = 0; j < next_layer_num_neurons; j++) { 
-                double delta_j_next_layer = current_deltas[j]; 
-
-                double bias_gradient = delta_j_next_layer;
+            for (int j = 0; j < next_layer_num_neurons; j++) {
+                double delta_j_next_layer = current_deltas[j];
                 int bias_idx = bias_start_index_for_layer + j;
-
-                m_biases[bias_idx] = beta1 * m_biases[bias_idx] + (1 - beta1) * bias_gradient;
-                v_biases[bias_idx] = beta2 * v_biases[bias_idx] + (1 - beta2) * (bias_gradient * bias_gradient);
-                double m_hat_bias = m_biases[bias_idx] / (1 - Math.pow(beta1, this.t));
-                double v_hat_bias = v_biases[bias_idx] / (1 - Math.pow(beta2, this.t));
-                biases[bias_idx] -= learning_rate * m_hat_bias / (Math.sqrt(v_hat_bias) + epsilon);
-
-                for (int i = 0; i < current_layer_num_neurons; i++) { 
+                adam_update_bias(bias_idx, delta_j_next_layer);
+                for (int i = 0; i < current_layer_num_neurons; i++) {
                     int w_idx = weight_start_index_for_layer + j * current_layer_num_neurons + i;
-                    double original_weight = weights[w_idx, 0]; 
-
-                    double weight_gradient = delta_j_next_layer * all_activations[activation_offset_layer_l + i];
-                    
-                    m_weights[w_idx] = beta1 * m_weights[w_idx] + (1 - beta1) * weight_gradient;
-                    v_weights[w_idx] = beta2 * v_weights[w_idx] + (1 - beta2) * (weight_gradient * weight_gradient);
-                    double m_hat_weight = m_weights[w_idx] / (1 - Math.pow(beta1, this.t));
-                    double v_hat_weight = v_weights[w_idx] / (1 - Math.pow(beta2, this.t));
-                    weights[w_idx, 0] -= learning_rate * m_hat_weight / (Math.sqrt(v_hat_weight) + epsilon);
-                    
+                    double original_weight = weights[w_idx, 0];
+                    double weight_gradient = delta_j_next_layer * fwd.all_activations[activation_offset_layer_l + i];
+                    adam_update_weight(w_idx, weight_gradient);
                     dL_da_layer_l[i] += delta_j_next_layer * original_weight;
                 }
             }
-            
-            if (l > 0) { 
+            if (l > 0) {
                 double[] dL_dz_layer_l = new double[current_layer_num_neurons];
                 ActivationFunction activation_fn_l = this.layer_configs[l].activation_function;
-                int z_offset_l = z_offsets[l-1]; 
-
+                int z_offset_l = fwd.z_offsets[l-1];
                 for (int i = 0; i < current_layer_num_neurons; i++) {
-                    double z_value_l = z_values[z_offset_l + i];
+                    double z_value_l = fwd.z_values[z_offset_l + i];
                     dL_dz_layer_l[i] = activation_fn_l.backward(z_value_l, dL_da_layer_l[i]);
                 }
                 current_deltas = dL_dz_layer_l;
@@ -232,6 +256,13 @@ public class MultilayerPerceptron {
         }
     }
 
+    /**
+     * Fit the network to the training data for a number of epochs.
+     * @param x_train Training input data (samples x features)
+     * @param y_train Training target data (samples x 1 or samples x output_dim)
+     * @param epochs Number of epochs to train
+     * @param verbose If true, prints error every 100 epochs
+     */
     public void fit(double[,] x_train, double[] y_train, int epochs, bool verbose = false) {
         int samples = x_train.length[0];
         
@@ -264,6 +295,11 @@ public class MultilayerPerceptron {
         }
     }
     
+    /**
+     * Predict outputs for a batch of inputs.
+     * @param x Input data (samples x features)
+     * @return Flat array of predictions (samples * output_dim)
+     */
     public double[] predict_batch(double[,] x) {
         int samples = x.length[0];
         int output_size = layer_sizes[layer_sizes.length-1]; // This will now be used
