@@ -6,6 +6,7 @@ verceptron_lib = static_library(
     'org/esgdev/verceptron/perceptron.vala',
     'org/esgdev/verceptron/multilayer_perceptron.vala',
     'org/esgdev/verceptron/activation_functions.vala',
+    'org/esgdev/verceptron/error_functions.vala',
     'org/esgdev/verceptron/layer_definition.vala',
   ),
   dependencies: [glib_dep, gobject_dep, math_dep],  # Added math_dep

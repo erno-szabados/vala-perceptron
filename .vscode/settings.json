@@ -1,5 +1,5 @@
 {
     "makefile.configureOnOpen": false,
-    "C_Cpp.default.compileCommands": "/home/eszabados/workspace/verceptron/builddir/compile_commands.json",
+    "C_Cpp.default.compileCommands": "/home/eszabados/workspace/vala-perceptron/builddir/compile_commands.json",
     "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild"
 }
