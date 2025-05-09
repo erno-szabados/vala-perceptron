@@ -8,6 +8,7 @@ public class MultilayerPerceptron {
     private LayerDefinition[] layer_configs { get; set; }
     public int[] layer_sizes { get; private set; }
     private double learning_rate;
+    private ErrorFunction error_function;
 
     // Adam optimizer parameters
     private double[] m_weights; // First moment vector for weights
@@ -19,9 +20,10 @@ public class MultilayerPerceptron {
     private double epsilon = 1e-8;
     private int t = 0; // Time step for bias correction
 
-    public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1) {
+    public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1, ErrorFunction? error_function = null) {
         this.layer_configs = layer_configs;
         this.learning_rate = learning_rate;
+        this.error_function = error_function != null ? error_function : new MeanSquaredError();
 
         this.layer_sizes = new int[layer_configs.length];
         for (int i = 0; i < layer_configs.length; i++) {
@@ -166,7 +168,7 @@ public class MultilayerPerceptron {
         
         for (int i = 0; i < layer_sizes[output_layer_idx]; i++) {
             double output_activation_val = all_activations[output_activation_offset + i];
-            double dL_da_output = output_activation_val - targets[i]; 
+            double dL_da_output = this.error_function.backwards(targets[i], output_activation_val);
             double z_val_output = z_values[output_z_offset + i];
             errors[i] = output_activation_fn.backward(z_val_output, dL_da_output);
         }
@@ -249,13 +251,15 @@ public class MultilayerPerceptron {
                 
                 if (verbose) {
                     double[] output = this.forward(input); 
-                    sum_error += Math.pow(output[0] - target[0], 2);
+                    for (int k = 0; k < output.length; k++) {
+                        sum_error += this.error_function.compute(target[k], output[k]);
+                    }
                 }
             }
             
             if (verbose && epoch % 100 == 0) {
-                double mse = sum_error / samples;
-                stdout.printf("Epoch %d: MSE = %.6f\n", epoch, mse);
+                double avg_error = sum_error / samples;
+                stdout.printf("Epoch %d: Error = %.6f\n", epoch, avg_error);
             }
         }
     }

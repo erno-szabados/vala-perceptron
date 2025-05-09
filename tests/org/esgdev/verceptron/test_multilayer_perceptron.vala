@@ -8,7 +8,7 @@ void test_constructor_initialization () {
         new LayerDefinition(1, new SigmoidActivation())
     };
     double learning_rate = 0.1;
-    var mlp = new MultilayerPerceptron(layer_configs, learning_rate);
+    var mlp = new MultilayerPerceptron(layer_configs, learning_rate, new MeanSquaredError());
 
     // Check layer sizes
     assert(mlp.layer_sizes.length == 3);
@@ -26,7 +26,7 @@ void test_forward_propagation () {
         new LayerDefinition(2, new ReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
-    var mlp = new MultilayerPerceptron(layer_configs);
+    var mlp = new MultilayerPerceptron(layer_configs, 0.1, new MeanSquaredError());
 
     // Test with simple inputs
     double[] inputs = { 1.0, 0.5 };
@@ -45,7 +45,7 @@ void test_backpropagation_xor() {
         new LayerDefinition(5, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
-    var mlp = new MultilayerPerceptron(layer_configs, 0.02);
+    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy());
     
     // XOR training data
     double[,] x_train = {
@@ -83,7 +83,7 @@ void test_backpropagation_binary_classification() {
         new LayerDefinition(4, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
-    var mlp = new MultilayerPerceptron(layer_configs, 0.02);
+    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy());
     
     // Create a simple linearly separable dataset
     double[,] x_train = {
