@@ -1,6 +1,7 @@
 using GLib;
 using org.esgdev.verceptron;
 
+// Test MeanSquaredError: checks typical and zero-error cases for loss and gradient
 void test_mean_squared_error() {
     var mse = new MeanSquaredError();
     // Typical case
@@ -10,11 +11,12 @@ void test_mean_squared_error() {
     double expected_grad = output - target;
     assert(Math.fabs(mse.compute(target, output) - expected_loss) < 1e-8);
     assert(Math.fabs(mse.backwards(target, output) - expected_grad) < 1e-8);
-    // Zero error
+    // Zero error: output equals target
     assert(mse.compute(0.5, 0.5) == 0.0);
     assert(mse.backwards(0.5, 0.5) == 0.0);
 }
 
+// Test BinaryCrossEntropy: checks typical, edge, and clamped output cases for loss and gradient
 void test_binary_cross_entropy() {
     var bce = new BinaryCrossEntropy();
     // Typical case
@@ -26,8 +28,8 @@ void test_binary_cross_entropy() {
     double expected_grad = (clamped_output - target) / (clamped_output * (1.0 - clamped_output));
     assert(Math.fabs(bce.compute(target, output) - expected_loss) < 1e-8);
     assert(Math.fabs(bce.backwards(target, output) - expected_grad) < 1e-8);
-    // Edge cases
-    assert(bce.compute(0.0, 0.0) < 1e-6); // Should not be inf or nan
+    // Edge cases: output exactly 0 or 1, should not be inf or nan
+    assert(bce.compute(0.0, 0.0) < 1e-6);
     assert(bce.compute(1.0, 1.0) < 1e-6);
 }
 
