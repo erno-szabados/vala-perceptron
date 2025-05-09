@@ -1,0 +1,51 @@
+// copilot-instructions.txt
+
+# Project Overview
+This is a Vala project implementing neural network components, including:
+- Perceptron and MultilayerPerceptron classes
+- Various activation functions (Identity, Sigmoid, ReLU, LeakyReLU, Tanh)
+- Error functions (MeanSquaredError, BinaryCrossEntropy)
+- LayerDefinition and related utilities
+
+# Project Structure
+- Source code is in src/org/esgdev/verceptron/
+- Tests are in tests/org/esgdev/verceptron/
+- Meson is used for building and test orchestration
+
+# Coding Conventions
+- Use Vala language best practices and idioms
+- Use GLib and GObject where appropriate
+- Prefer explicit typing (e.g., double[], int[])
+- Use assert for test validation
+- Document public classes and methods with concise comments
+- For new tests, add documentation comments explaining the purpose and checks
+
+# Test Guidelines
+- Place new test files in tests/org/esgdev/verceptron/
+- Name test files as test_<component>.vala (e.g., test_activation_functions.vala)
+- Register tests using GLib.Test in main()
+- Cover both typical and edge cases for all public methods
+
+# Build System
+- Use Meson for build and test integration
+- Add new source files to src/meson.build
+- Add new test files to tests/meson.build and register them as test executables
+
+# General Instructions
+- Follow the structure and style of existing code
+- Prefer clarity and maintainability over brevity
+- When in doubt, refer to existing files for examples
+
+# Exclusions
+- Do not generate code in languages other than Vala for this project
+- Do not use external neural network libraries; all logic should be implemented in Vala
+
+# Example File Locations
+- src/org/esgdev/verceptron/perceptron.vala
+- src/org/esgdev/verceptron/multilayer_perceptron.vala
+- src/org/esgdev/verceptron/activation_functions.vala
+- src/org/esgdev/verceptron/error_functions.vala
+- tests/org/esgdev/verceptron/test_activation_functions.vala
+- tests/org/esgdev/verceptron/test_error_functions.vala
+
+# End of instructions
