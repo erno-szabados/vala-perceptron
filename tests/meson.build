@@ -69,6 +69,10 @@ test('mlp_backpropagation_binary_classification', test_multilayer_perceptron_exe
   args : ['-p', '/multilayer_perceptron/backpropagation_binary_classification'],
   suite: 'learning'
 )
+test('test_autoencoder_compression_decompression', test_multilayer_perceptron_executable,
+  args : ['-p', '/multilayer_perceptron/autoencoder_compression_decompression'],
+  suite: 'learning'
+)
 
 test('mlp_linear_regression', test_multilayer_perceptron_executable,
   args : ['-p', '/multilayer_perceptron/linear_regression'],

@@ -217,6 +217,47 @@ void test_function_approximation_sin() {
     }
 }
 
+// Test autoencoder: compress and decompress data
+void test_autoencoder_compression_decompression() {
+    // Autoencoder: 4 input -> 2 hidden -> 4 output
+    var layer_configs = new LayerDefinition[] {
+        new LayerDefinition(4, new LeakyReLUActivation()),
+        new LayerDefinition(2, new LeakyReLUActivation()),
+        new LayerDefinition(4, new SigmoidActivation())
+    };
+    var mlp = new MultilayerPerceptron(layer_configs, 0.001, new MeanSquaredError(), 42);
+
+    // Training data: identity matrix (one-hot vectors)
+    double[,] x_train = {
+        { 1.0, 0.0, 0.0, 0.0 },
+        { 0.0, 1.0, 0.0, 0.0 },
+        { 0.0, 0.0, 1.0, 0.0 },
+        { 0.0, 0.0, 0.0, 1.0 }
+    };
+
+    // Train
+    for (int epoch = 0; epoch < 6000; epoch++) {
+        for (int i = 0; i < 4; i++) {
+            double[] input = new double[4];
+            for (int j = 0; j < 4; j++) input[j] = x_train[i, j];
+            double[] target = new double[4];
+            for (int j = 0; j < 4; j++) target[j] = x_train[i, j];
+            mlp.train(input, target);
+        }
+    }
+
+    // Test: output should reconstruct input
+    for (int i = 0; i < 4; i++) {
+        double[] input = new double[4];
+        for (int j = 0; j < 4; j++) input[j] = x_train[i, j];
+        double[] output = mlp.forward(input);
+        for (int j = 0; j < 4; j++) {
+            stdout.printf("Autoencoder Input: %d, Output[%d]: %.4f\n", i, j, output[j]);
+            assert(Math.fabs(output[j] - input[j]) < 0.2);
+        }
+    }
+}
+
 int main (string[] args) {
     Test.init(ref args);
 
@@ -226,6 +267,7 @@ int main (string[] args) {
     Test.add_func("/multilayer_perceptron/backpropagation_binary_classification", test_backpropagation_binary_classification);
     Test.add_func("/multilayer_perceptron/linear_regression", test_linear_regression);
     Test.add_func("/multilayer_perceptron/function_approximation_sin", test_function_approximation_sin);
+    Test.add_func("/multilayer_perceptron/autoencoder_compression_decompression", test_autoencoder_compression_decompression);
 
     return Test.run();
 }
