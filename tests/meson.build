@@ -75,6 +75,11 @@ test('mlp_linear_regression', test_multilayer_perceptron_executable,
   suite: 'regression'
 )
 
+test('mlp_function_approximation_sin', test_multilayer_perceptron_executable,
+  args : ['-p', '/multilayer_perceptron/function_approximation_sin'],
+  suite: 'regression'
+)
+
 test('error_functions_mean_squared_error', test_error_function_executable,
   args : ['-p', '/error_functions/mean_squared_error'],
   suite: 'error_functions'

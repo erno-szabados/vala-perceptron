@@ -1,3 +1,5 @@
+# Add project-wide arguments for optimization
+add_project_arguments('-march=native', '-fopt-info-vec-all', '-ffast-math', language: 'c')
 # Create a static library for the verceptron core functionality
 # This will allow the test suite to use it
 verceptron_lib = static_library(
@@ -8,6 +10,7 @@ verceptron_lib = static_library(
     'org/esgdev/verceptron/activation_functions.vala',
     'org/esgdev/verceptron/error_functions.vala',
     'org/esgdev/verceptron/layer_definition.vala',
+    'org/esgdev/verceptron/regression_metrics.vala',
   ),
   dependencies: [glib_dep, gobject_dep, math_dep],  # Added math_dep
 )

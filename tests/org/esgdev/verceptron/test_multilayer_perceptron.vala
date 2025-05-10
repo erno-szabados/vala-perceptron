@@ -39,6 +39,9 @@ void test_forward_propagation () {
     // stdout.printf("Output: %f\n", outputs[0]);
 }
 
+// This test is expected to fail on about 1% of the runs on random seeds
+// due to the nature of the XOR problem and the random initialization.
+// The fixed seed is used to ensure reproducibility.
 void test_backpropagation_xor() {
     var layer_configs = new LayerDefinition[] {
         new LayerDefinition(2, new LeakyReLUActivation()),
@@ -176,6 +179,44 @@ void test_linear_regression() {
     }
 }
 
+// Test function approximation: y = sin(x)
+void test_function_approximation_sin() {
+    // Network: 1 input, 1 hidden layer (Tanh), 1 output (Identity)
+    var layer_configs = new LayerDefinition[] {
+        new LayerDefinition(1, new IdentityActivation()),
+        new LayerDefinition(8, new TanhActivation()),
+        new LayerDefinition(1, new IdentityActivation())
+    };
+    var mlp = new MultilayerPerceptron(layer_configs, 0.001, new MeanSquaredError(), 42);
+
+    // Training data: x in [0, 2pi], y = sin(x)
+    int n_samples = 50;
+    double[,] x_train = new double[n_samples, 1];
+    double[] y_train = new double[n_samples];
+    for (int i = 0; i < n_samples; i++) {
+        double x = (2 * Math.PI) * i / (n_samples - 1);
+        x_train[i, 0] = x;
+        y_train[i] = Math.sin(x);
+    }
+
+    mlp.fit(x_train, y_train, 2000, true);
+
+    // Test predictions on training data
+    double[] predictions = mlp.predict_batch(x_train);
+    double tolerance = 0.15;
+    // Compute regression metrics
+    double mse = RegressionMetrics.mse(y_train, predictions);
+    double mae = RegressionMetrics.mae(y_train, predictions);
+    double max_err = RegressionMetrics.max_error(y_train, predictions);
+    double r2 = RegressionMetrics.r2(y_train, predictions);
+    stdout.printf("Function Approximation Metrics:\nMSE: %.6f, MAE: %.6f, Max Error: %.6f, R2: %.4f\n", mse, mae, max_err, r2);
+    for (int i = 0; i < n_samples; i++) {
+        double prediction = predictions[i];
+        double expected = y_train[i];
+        assert(Math.fabs(prediction - expected) < tolerance);
+    }
+}
+
 int main (string[] args) {
     Test.init(ref args);
 
@@ -184,6 +225,7 @@ int main (string[] args) {
     Test.add_func("/multilayer_perceptron/backpropagation_xor", test_backpropagation_xor);
     Test.add_func("/multilayer_perceptron/backpropagation_binary_classification", test_backpropagation_binary_classification);
     Test.add_func("/multilayer_perceptron/linear_regression", test_linear_regression);
+    Test.add_func("/multilayer_perceptron/function_approximation_sin", test_function_approximation_sin);
 
     return Test.run();
 }
