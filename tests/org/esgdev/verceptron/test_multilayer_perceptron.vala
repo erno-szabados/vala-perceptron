@@ -8,7 +8,7 @@ void test_constructor_initialization () {
         new LayerDefinition(1, new SigmoidActivation())
     };
     double learning_rate = 0.1;
-    var mlp = new MultilayerPerceptron(layer_configs, learning_rate, new MeanSquaredError());
+    var mlp = new MultilayerPerceptron(layer_configs, learning_rate, new MeanSquaredError(), 42);
 
     // Check layer sizes
     assert(mlp.layer_sizes.length == 3);
@@ -45,7 +45,7 @@ void test_backpropagation_xor() {
         new LayerDefinition(5, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
-    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy());
+    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy(), 42);
     
     // XOR training data
     double[,] x_train = {
@@ -83,7 +83,7 @@ void test_backpropagation_binary_classification() {
         new LayerDefinition(4, new LeakyReLUActivation()),
         new LayerDefinition(1, new SigmoidActivation())
     };
-    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy());
+    var mlp = new MultilayerPerceptron(layer_configs, 0.02, new BinaryCrossEntropy(), 42);
     
     // Create a simple linearly separable dataset
     double[,] x_train = {
@@ -145,6 +145,37 @@ void test_backpropagation_binary_classification() {
     assert(all_correct);
 }
 
+// Test linear regression: y = 2x + 1
+void test_linear_regression() {
+    var layer_configs = new LayerDefinition[] {
+        new LayerDefinition(1, new IdentityActivation()), // Input layer
+        new LayerDefinition(1, new IdentityActivation())  // Output layer
+    };
+    var mlp = new MultilayerPerceptron(layer_configs, 0.05, new MeanSquaredError(), 42);
+
+    // Training data: y = 2x + 1
+    double[,] x_train = {
+        { 0.0 },
+        { 1.0 },
+        { 2.0 },
+        { 3.0 },
+        { 4.0 }
+    };
+    double[] y_train = { 1.0, 3.0, 5.0, 7.0, 9.0 };
+
+    mlp.fit(x_train, y_train, 200, true);
+
+    // Test predictions
+    double[] predictions = mlp.predict_batch(x_train);
+    double tolerance = 0.2;
+    for (int i = 0; i < y_train.length; i++) {
+        double prediction = predictions[i];
+        double expected = y_train[i];
+        stdout.printf("Input: %.1f, Expected: %.1f, Predicted: %.3f\n", x_train[i,0], expected, prediction);
+        assert(Math.fabs(prediction - expected) < tolerance);
+    }
+}
+
 int main (string[] args) {
     Test.init(ref args);
 
@@ -152,6 +183,7 @@ int main (string[] args) {
     Test.add_func("/multilayer_perceptron/forward_propagation", test_forward_propagation);
     Test.add_func("/multilayer_perceptron/backpropagation_xor", test_backpropagation_xor);
     Test.add_func("/multilayer_perceptron/backpropagation_binary_classification", test_backpropagation_binary_classification);
+    Test.add_func("/multilayer_perceptron/linear_regression", test_linear_regression);
 
     return Test.run();
 }

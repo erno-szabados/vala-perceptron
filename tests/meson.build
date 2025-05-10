@@ -70,6 +70,11 @@ test('mlp_backpropagation_binary_classification', test_multilayer_perceptron_exe
   suite: 'learning'
 )
 
+test('mlp_linear_regression', test_multilayer_perceptron_executable,
+  args : ['-p', '/multilayer_perceptron/linear_regression'],
+  suite: 'regression'
+)
+
 test('error_functions_mean_squared_error', test_error_function_executable,
   args : ['-p', '/error_functions/mean_squared_error'],
   suite: 'error_functions'

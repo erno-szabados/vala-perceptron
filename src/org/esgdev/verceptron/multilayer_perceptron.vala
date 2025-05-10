@@ -36,8 +36,9 @@ public class MultilayerPerceptron {
      * @param layer_configs Array of LayerDefinition specifying each layer's size and activation
      * @param learning_rate Learning rate for Adam optimizer
      * @param error_function Error function to use (default: MeanSquaredError)
+     * @param seed Optional random seed for reproducible initialization
      */
-    public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1, ErrorFunction? error_function = null) {
+    public MultilayerPerceptron (LayerDefinition[] layer_configs, double learning_rate = 0.1, ErrorFunction? error_function = null, uint? seed = null) {
         this.layer_configs = layer_configs;
         this.learning_rate = learning_rate;
         this.error_function = error_function != null ? error_function : new MeanSquaredError();
@@ -64,7 +65,13 @@ public class MultilayerPerceptron {
         this.v_biases = new double[total_biases];
         // t is already initialized to 0 by default for int class member
 
-        var random = new Rand();
+        Rand random;
+        // Use the provided seed if given, otherwise default
+        if (seed == null) {
+            random = new Rand();
+        } else {
+            random = new Rand.with_seed(seed);
+        }
         int weight_idx_init = 0; // Renamed to avoid conflict
 
         for (int l = 0; l < this.layer_sizes.length - 1; l++) {
